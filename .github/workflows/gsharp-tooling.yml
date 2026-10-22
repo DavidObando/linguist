@@ -31,6 +31,7 @@ jobs:
           script/fast-submodule-update 16
       - name: Generate language ID and register grammar with official tooling
         run: |
+          git log -1 --format='Tested source: %H %s'
           script/update-ids
           if ! grep -q 'vendor/grammars/gsharp-tmlanguage' .gitmodules; then
             script/add-grammar https://github.com/DavidObando/gsharp-tmlanguage
@@ -51,15 +52,20 @@ jobs:
       - name: Native tokenizer, samples and classification tests
         run: |
           bundle exec rake samples
-          bundle exec rake test TEST="test/test_heuristics.rb test/test_blob.rb test/test_language.rb test/test_language_id.rb test/test_samples.rb test/test_tokenizer.rb"
+          bundle exec rake test TEST='test/test_{heuristics,blob,language,language_id,samples,tokenizer}.rb'
       - name: Grammar license checks
+        if: ${{ !cancelled() }}
         run: bundle exec licensed status -c vendor/licenses/config.yml
       - name: Classifier cross-validation
+        if: ${{ !cancelled() }}
         run: bundle exec script/cross-validation --test
       - uses: actions/setup-go@v6
+        if: ${{ !cancelled() }}
         with:
           go-version: stable
           cache: false
       - uses: dtolnay/rust-toolchain@stable
+        if: ${{ !cancelled() }}
       - name: Regex data compatibility
+        if: ${{ !cancelled() }}
         run: script/check-regex-compatibility
