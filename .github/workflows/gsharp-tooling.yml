@@ -22,11 +22,20 @@ jobs:
         with:
           ruby-version: '3.3'
           bundler-cache: true
+      - name: Fetch native test references and grammar submodules
+        run: |
+          git fetch https://github.com/github-linguist/linguist.git main:main v2.0.0:v2.0.0 test/attributes:test/attributes test/master:test/master
+          git config --global url.https://github.com/.insteadOf git@github.com:
+          git submodule init
+          git submodule sync --quiet
+          script/fast-submodule-update 16
       - name: Generate language ID and register grammar with official tooling
         run: |
           script/update-ids
           if ! grep -q 'vendor/grammars/gsharp-tmlanguage' .gitmodules; then
             script/add-grammar https://github.com/DavidObando/gsharp-tmlanguage
+          else
+            script/grammar-compiler add vendor/grammars/gsharp-tmlanguage
           fi
           test "$(git ls-files --stage vendor/grammars/gsharp-tmlanguage | awk '{print $2}')" = 95997d7e139fdf6f1a9c43f55de31071095ddfe8
           script/update-ids --check
@@ -39,13 +48,6 @@ jobs:
         with:
           name: generated-contribution
           path: contribution-artifacts
-      - name: Fetch native test references and grammar submodules
-        run: |
-          git fetch https://github.com/github-linguist/linguist.git main:main v2.0.0:v2.0.0 test/attributes:test/attributes test/master:test/master
-          sed -i 's|git@github.com:|https://github.com/|' .gitmodules
-          git submodule init
-          git submodule sync --quiet
-          script/fast-submodule-update
       - name: Native tokenizer, samples and classification tests
         run: |
           bundle exec rake samples
